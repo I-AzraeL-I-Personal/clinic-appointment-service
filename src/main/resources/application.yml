@@ -1,0 +1,47 @@
+server:
+  port: ${PORT:8083}
+  error:
+    include-message: always
+
+spring:
+  application:
+    name: clinic-appointment-service
+  datasource:
+    url: ${JDBC_DATABASE_URL}
+    username: ${JDBC_DATABASE_USERNAME}
+    password: ${JDBC_DATABASE_PASSWORD}
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL-AUTO}
+
+logging:
+  level:
+    org:
+      springframework:
+        security: DEBUG
+      hibernate:
+        SQL: DEBUG
+        type:
+          descriptor:
+            sql:
+              BasicBinder: TRACE
+
+app:
+  tokenSecret: ${TOKEN_SECRET}
+  tokenExpirationMs: ${TOKEN_EXPIRATION}
+  usedTimezone: ${USED_TIMEZONE}
+  
+eureka:
+  instance:
+    non-secure-port: 80
+    hostname: ${HOST_NAME}
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_URL:http://user:password@localhost:8761}/eureka/
+security:
+  user:
+    password: ${eureka.password}
