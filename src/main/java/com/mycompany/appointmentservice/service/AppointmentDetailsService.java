@@ -1,53 +1,46 @@
 package com.mycompany.appointmentservice.service;
 
+import com.cloudinary.Cloudinary;
 import com.mycompany.appointmentservice.dto.AppointmentDetailsDto;
 import com.mycompany.appointmentservice.exception.DataInvalidException;
 import com.mycompany.appointmentservice.exception.DataNotFoundException;
 import com.mycompany.appointmentservice.repository.AppointmentDetailsRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.core.io.Resource;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Optional;
+import java.io.IOException;
+import java.util.Map;
+import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
 public class AppointmentDetailsService {
 
     private final AppointmentDetailsRepository detailsRepository;
-    private final FileService fileService;
     private final ModelMapper modelMapper;
+    private final Cloudinary cloudinary;
 
     @Transactional
     @PreAuthorize("@appointmentAccess.isOwnerOrDoctor(#id)")
     public AppointmentDetailsDto updateDetails(Long id,
                                                AppointmentDetailsDto appointmentDetailsDto,
-                                               Optional<MultipartFile> prescription,
-                                               Optional<MultipartFile> attachment) {
+                                               @RequestParam(required = false) MultipartFile prescription,
+                                               @RequestParam(required = false) MultipartFile attachment) {
         var appointmentDetails = detailsRepository.findById(id)
                 .orElseThrow(() -> new DataNotFoundException(id.toString(), "Appointment not found"));
         appointmentDetails.setDescription(appointmentDetailsDto.getDescription());
 
-        prescription.ifPresent(file -> {
-            try {
-                fileService.save(file, id.toString(), file.getOriginalFilename());
-                appointmentDetails.setPrescriptionUri(file.getOriginalFilename());
-            } catch (Exception e) {
-                throw new DataInvalidException(id.toString(), "Prescription is invalid");
-            }
-        });
-        attachment.ifPresent(file -> {
-            try {
-                fileService.save(file, id.toString(), file.getOriginalFilename());
-                appointmentDetails.setAttachmentUri(file.getOriginalFilename());
-            } catch (Exception e) {
-                throw new DataInvalidException(id.toString(), "Attachment is invalid");
-            }
-        });
+        if (prescription != null) {
+            uploadFile(prescription, "user/" + id.toString(), "prescription", appointmentDetails::setPrescriptionUri);
+        }
+        if (attachment != null) {
+            uploadFile(attachment, "user/" + id.toString(), "attachment", appointmentDetails::setAttachmentUri);
+        }
 
         return modelMapper.map(detailsRepository.save(appointmentDetails), AppointmentDetailsDto.class);
     }
@@ -60,30 +53,17 @@ public class AppointmentDetailsService {
         return modelMapper.map(appointmentDetails, AppointmentDetailsDto.class);
     }
 
-    @Transactional(readOnly = true)
-    @PreAuthorize("@appointmentAccess.isOwnerOrDoctor(#id)")
-    public Resource getAttachmentResource(Long id) {
-        var appointmentDetails = detailsRepository.findById(id)
-                .orElseThrow(() -> new DataNotFoundException(id.toString(), "Appointment not found"));
-        var name = appointmentDetails.getAttachmentUri();
+    private void uploadFile(MultipartFile file, String directory, String name, Consumer<String> callback) {
         try {
-            return fileService.load(id.toString(), name);
-        } catch (Exception e) {
-            throw new DataNotFoundException(id.toString(), "Attachment not found");
-        }
-    }
-
-    @Transactional(readOnly = true)
-    @PreAuthorize("@appointmentAccess.isOwnerOrDoctor(#id)")
-    public Resource getPrescriptionResource(Long id) {
-        var appointmentDetails = detailsRepository.findById(id)
-                .orElseThrow(() -> new DataNotFoundException(id.toString(), "Appointment not found"));
-        var name = appointmentDetails.getPrescriptionUri();
-        try {
-            return fileService.load(id.toString(), name);
-        } catch (Exception e) {
-            System.err.println(e.getMessage());
-            throw new DataNotFoundException(id.toString(), "Prescription not found");
+            var path = directory + "/" + name;
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = cloudinary.uploader().upload(file, Map.of(
+                    "resource_type", "auto",
+                    "public_id", path
+            ));
+            callback.accept((String) response.get("public_id"));
+        } catch (IOException e) {
+            throw new DataInvalidException(name, "Couldn't upload file");
         }
     }
 }

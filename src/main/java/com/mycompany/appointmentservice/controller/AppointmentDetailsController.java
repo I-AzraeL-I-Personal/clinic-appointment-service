@@ -22,26 +22,10 @@ public class AppointmentDetailsController {
         return ResponseEntity.ok(detailsService.getDetails(id));
     }
 
-    @GetMapping("/{id}/details/prescription")
-    public ResponseEntity<Resource> getPrescriptionResource(@PathVariable Long id) {
-        var resource = detailsService.getPrescriptionResource(id);
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
-                .body(resource);
-    }
-
-    @GetMapping("/{id}/details/attachment")
-    public ResponseEntity<Resource> getAttachmentResource(@PathVariable Long id) {
-        var resource = detailsService.getAttachmentResource(id);
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
-                .body(resource);
-    }
-
     @PostMapping("/{id}/details")
     public ResponseEntity<AppointmentDetailsDto> update(@RequestPart("details") AppointmentDetailsDto details,
-                                                        @RequestPart("prescription") Optional<MultipartFile> prescription,
-                                                        @RequestPart("attachment") Optional<MultipartFile> attachment,
+                                                        @RequestPart(value = "prescription", required = false) MultipartFile prescription,
+                                                        @RequestPart(value = "attachment", required = false) MultipartFile attachment,
                                                         @PathVariable Long id) {
         return ResponseEntity.ok(detailsService.updateDetails(id, details, prescription, attachment));
     }
