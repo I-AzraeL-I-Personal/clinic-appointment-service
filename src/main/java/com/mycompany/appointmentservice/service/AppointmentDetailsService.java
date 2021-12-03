@@ -39,12 +39,11 @@ public class AppointmentDetailsService {
         if (prescription != null) {
             Map<String, Object> response = uploadFile(prescription, "user/" + id.toString(), "prescription");
             if (response != null) {
-                var publicId = (String) response.get("url");
+                var url = (String) response.get("secure_url");
                 var format = (String) response.get("format");
-                appointmentDetails.setPrescription(publicId);
+                appointmentDetails.setPrescription(url);
                 appointmentDetails.setPrescriptionFormat(format);
-                appointmentDetailsDto.setPrescription(publicId);
-                //appointmentDetailsDto.setPrescription(generatePublicUri(publicId, format));
+                appointmentDetailsDto.setPrescription(url);
             } else {
                 appointmentDetails.setPrescription(null);
                 appointmentDetailsDto.setPrescription(null);
@@ -53,11 +52,11 @@ public class AppointmentDetailsService {
         if (attachment != null) {
             Map<String, Object> response = uploadFile(attachment, "user/" + id.toString(), "attachment");
             if (response != null) {
-                var publicId = (String) response.get("public_id");
+                var url = (String) response.get("secure_url");
                 var format = (String) response.get("format");
-                appointmentDetails.setAttachment(publicId);
+                appointmentDetails.setAttachment(url);
                 appointmentDetails.setAttachmentFormat(format);
-                appointmentDetailsDto.setAttachment(generatePublicUri(publicId, format));
+                appointmentDetailsDto.setAttachment(url);
             } else {
                 appointmentDetails.setAttachment(null);
                 appointmentDetailsDto.setAttachment(null);
@@ -71,16 +70,7 @@ public class AppointmentDetailsService {
     @PreAuthorize("@appointmentAccess.isOwnerOrDoctor(#id)")
     public AppointmentDetailsDto getDetails(Long id) {
         return detailsRepository.findById(id)
-                .map(details -> {
-                    var detailsDto = modelMapper.map(details, AppointmentDetailsDto.class);
-                    if (details.getPrescription() != null) {
-                        detailsDto.setPrescription(generatePublicUri(details.getPrescription(), details.getPrescriptionFormat()));
-                    }
-                    if (details.getAttachment() != null) {
-                        detailsDto.setAttachment(generatePublicUri(details.getAttachment(), details.getAttachmentFormat()));
-                    }
-                    return detailsDto;
-                })
+                .map(details -> modelMapper.map(details, AppointmentDetailsDto.class))
                 .orElseThrow(() -> new DataNotFoundException(id.toString(), "Appointment not found"));
     }
 
@@ -96,17 +86,6 @@ public class AppointmentDetailsService {
         } catch (IOException e) {
             log.error("Exception in uploadFile(): {}", e.getMessage());
             throw new DataInvalidException(name, "Couldn't upload file");
-        }
-    }
-
-    private String generatePublicUri(String publicId, String format) {
-        try {
-            return cloudinary.privateDownload(publicId, format, Map.of(
-                    "attachment", "true",
-                    "resource_type", "raw"));
-        } catch (Exception e) {
-            log.error("Exception in generatePublicUri(): {}", e.getMessage());
-            throw new DataInvalidException("", "Couldn't get file");
         }
     }
 }
