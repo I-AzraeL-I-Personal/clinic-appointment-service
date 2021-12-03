@@ -6,6 +6,7 @@ import com.mycompany.appointmentservice.exception.DataInvalidException;
 import com.mycompany.appointmentservice.exception.DataNotFoundException;
 import com.mycompany.appointmentservice.repository.AppointmentDetailsRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AppointmentDetailsService {
 
     private final AppointmentDetailsRepository detailsRepository;
@@ -63,6 +65,7 @@ public class AppointmentDetailsService {
             ));
             callback.accept((String) response.get("public_id"));
         } catch (IOException e) {
+            log.error(e.getMessage());
             throw new DataInvalidException(name, "Couldn't upload file");
         }
     }
