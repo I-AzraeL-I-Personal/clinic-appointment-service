@@ -63,7 +63,7 @@ public class AppointmentDetailsService {
                     "resource_type", "auto",
                     "public_id", path
             ));
-            callback.accept((String) response.get("public_id"));
+            callback.accept((String) response.get("secure_url"));
         } catch (IOException e) {
             log.error("IOException in uploadFile(): {}", e.getMessage());
             throw new DataInvalidException(name, "Couldn't upload file");
