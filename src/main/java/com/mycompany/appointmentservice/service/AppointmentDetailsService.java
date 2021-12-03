@@ -59,13 +59,13 @@ public class AppointmentDetailsService {
         try {
             var path = directory + "/" + name;
             @SuppressWarnings("unchecked")
-            Map<String, Object> response = cloudinary.uploader().upload(file, Map.of(
+            Map<String, Object> response = cloudinary.uploader().upload(file.getBytes(), Map.of(
                     "resource_type", "auto",
                     "public_id", path
             ));
             callback.accept((String) response.get("public_id"));
         } catch (IOException e) {
-            log.error(e.getMessage());
+            log.error("IOException in uploadFile(): {}", e.getMessage());
             throw new DataInvalidException(name, "Couldn't upload file");
         }
     }
