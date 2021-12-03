@@ -39,11 +39,12 @@ public class AppointmentDetailsService {
         if (prescription != null) {
             Map<String, Object> response = uploadFile(prescription, "user/" + id.toString(), "prescription");
             if (response != null) {
-                var publicId = (String) response.get("public_id");
+                var publicId = (String) response.get("url");
                 var format = (String) response.get("format");
                 appointmentDetails.setPrescription(publicId);
                 appointmentDetails.setPrescriptionFormat(format);
-                appointmentDetailsDto.setPrescription(generatePublicUri(publicId, format));
+                appointmentDetailsDto.setPrescription(publicId);
+                //appointmentDetailsDto.setPrescription(generatePublicUri(publicId, format));
             } else {
                 appointmentDetails.setPrescription(null);
                 appointmentDetailsDto.setPrescription(null);
@@ -100,6 +101,7 @@ public class AppointmentDetailsService {
 
     private String generatePublicUri(String publicId, String format) {
         try {
+            cloudinary.url()
             return cloudinary.privateDownload(publicId, format, Map.of(
                     "attachment", "true",
                     "resource_type", "raw"));
