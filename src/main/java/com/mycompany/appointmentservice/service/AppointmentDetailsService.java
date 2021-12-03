@@ -7,6 +7,7 @@ import com.mycompany.appointmentservice.exception.DataNotFoundException;
 import com.mycompany.appointmentservice.repository.AppointmentDetailsRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FilenameUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -40,9 +41,8 @@ public class AppointmentDetailsService {
             Map<String, Object> response = uploadFile(prescription, "user/" + id.toString(), "prescription");
             if (response != null) {
                 var url = (String) response.get("secure_url");
-                var format = (String) response.get("format");
                 appointmentDetails.setPrescription(url);
-                appointmentDetails.setPrescriptionFormat(format);
+                appointmentDetails.setPrescriptionFormat(FilenameUtils.getExtension(prescription.getOriginalFilename()));
             } else {
                 appointmentDetails.setPrescription(null);
             }
@@ -51,9 +51,8 @@ public class AppointmentDetailsService {
             Map<String, Object> response = uploadFile(attachment, "user/" + id.toString(), "attachment");
             if (response != null) {
                 var url = (String) response.get("secure_url");
-                var format = (String) response.get("format");
                 appointmentDetails.setAttachment(url);
-                appointmentDetails.setAttachmentFormat(format);
+                appointmentDetails.setAttachmentFormat(FilenameUtils.getExtension(attachment.getOriginalFilename()));
             } else {
                 appointmentDetails.setAttachment(null);
             }
