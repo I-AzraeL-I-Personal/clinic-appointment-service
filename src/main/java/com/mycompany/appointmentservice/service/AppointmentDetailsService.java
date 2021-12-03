@@ -16,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.function.Consumer;
 
 @Service
 @RequiredArgsConstructor
@@ -38,24 +37,49 @@ public class AppointmentDetailsService {
         appointmentDetails.setDescription(appointmentDetailsDto.getDescription());
 
         if (prescription != null) {
-            uploadFile(prescription, "user/" + id.toString(), "prescription", appointmentDetails::setPrescriptionUri);
+            Map<String, Object> response = uploadFile(prescription, "user/" + id.toString(), "prescription");
+            if (response != null) {
+                var publicId = (String) response.get("public_id");
+                var format = (String) response.get("format");
+                appointmentDetails.setPrescription(publicId);
+                appointmentDetails.setPrescriptionFormat(format);
+                appointmentDetailsDto.setPrescription(generatePublicUri(publicId, format));
+            } else {
+                appointmentDetails.setPrescription(null);
+                appointmentDetailsDto.setPrescription(null);
+            }
         }
         if (attachment != null) {
-            uploadFile(attachment, "user/" + id.toString(), "attachment", appointmentDetails::setAttachmentUri);
+            Map<String, Object> response = uploadFile(attachment, "user/" + id.toString(), "attachment");
+            if (response != null) {
+                var publicId = (String) response.get("public_id");
+                var format = (String) response.get("format");
+                appointmentDetails.setAttachment(publicId);
+                appointmentDetails.setAttachmentFormat(format);
+                appointmentDetailsDto.setAttachment(generatePublicUri(publicId, format));
+            } else {
+                appointmentDetails.setAttachment(null);
+                appointmentDetailsDto.setAttachment(null);
+            }
         }
 
-        return modelMapper.map(detailsRepository.save(appointmentDetails), AppointmentDetailsDto.class);
+        return appointmentDetailsDto;
     }
 
     @Transactional(readOnly = true)
     @PreAuthorize("@appointmentAccess.isOwnerOrDoctor(#id)")
     public AppointmentDetailsDto getDetails(Long id) {
-        var appointmentDetails = detailsRepository.findById(id)
+        return detailsRepository.findById(id)
+                .map(details -> {
+                    var detailsDto = modelMapper.map(details, AppointmentDetailsDto.class);
+                    detailsDto.setPrescription(generatePublicUri(details.getPrescription(), details.getPrescriptionFormat()));
+                    detailsDto.setAttachment(generatePublicUri(details.getAttachment(), details.getAttachmentFormat()));
+                    return detailsDto;
+                })
                 .orElseThrow(() -> new DataNotFoundException(id.toString(), "Appointment not found"));
-        return modelMapper.map(appointmentDetails, AppointmentDetailsDto.class);
     }
 
-    private void uploadFile(MultipartFile file, String directory, String name, Consumer<String> callback) {
+    private Map<String, Object> uploadFile(MultipartFile file, String directory, String name) {
         try {
             var path = directory + "/" + name;
             @SuppressWarnings("unchecked")
@@ -63,10 +87,19 @@ public class AppointmentDetailsService {
                     "resource_type", "auto",
                     "public_id", path
             ));
-            callback.accept((String) response.get("secure_url"));
+            return response;
         } catch (IOException e) {
-            log.error("IOException in uploadFile(): {}", e.getMessage());
+            log.error("Exception in uploadFile(): {}", e.getMessage());
             throw new DataInvalidException(name, "Couldn't upload file");
+        }
+    }
+
+    private String generatePublicUri(String publicId, String format) {
+        try {
+            return cloudinary.privateDownload(publicId, format, Map.of("attachment", "true"));
+        } catch (Exception e) {
+            log.error("Exception in generatePublicUri(): {}", e.getMessage());
+            throw new DataInvalidException("", "Couldn't get file");
         }
     }
 }

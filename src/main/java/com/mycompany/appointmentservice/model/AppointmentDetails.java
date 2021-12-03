@@ -18,11 +18,13 @@ public class AppointmentDetails {
     @Column(columnDefinition = "text", length = 1000)
     private String description;
 
-    @Column
-    private String prescriptionUri;
+    private String prescription;
 
-    @Column
-    private String attachmentUri;
+    private String attachment;
+
+    private String prescriptionFormat;
+
+    private String attachmentFormat;
 
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
