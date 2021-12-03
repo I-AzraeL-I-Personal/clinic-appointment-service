@@ -88,7 +88,8 @@ public class AppointmentDetailsService {
             var path = directory + "/" + name;
             @SuppressWarnings("unchecked")
             Map<String, Object> response = cloudinary.uploader().upload(file.getBytes(), Map.of(
-                    "resource_type", "auto",
+                    "resource_type", "raw",
+                    "type", "upload",
                     "public_id", path));
             return response;
         } catch (IOException e) {
