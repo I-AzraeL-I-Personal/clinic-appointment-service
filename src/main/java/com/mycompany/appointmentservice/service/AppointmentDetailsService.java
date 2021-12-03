@@ -101,7 +101,6 @@ public class AppointmentDetailsService {
 
     private String generatePublicUri(String publicId, String format) {
         try {
-            cloudinary.url()
             return cloudinary.privateDownload(publicId, format, Map.of(
                     "attachment", "true",
                     "resource_type", "raw"));
