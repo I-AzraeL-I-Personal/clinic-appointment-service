@@ -20,4 +20,10 @@ public class AppointmentDetailsDto {
     @JsonProperty(access = Access.READ_ONLY)
     private String attachment;
 
+    @JsonProperty(access = Access.READ_ONLY)
+    private String prescriptionFormat;
+
+    @JsonProperty(access = Access.READ_ONLY)
+    private String attachmentFormat;
+
 }

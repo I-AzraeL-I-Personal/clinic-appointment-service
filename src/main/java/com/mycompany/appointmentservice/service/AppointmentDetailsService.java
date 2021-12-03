@@ -43,10 +43,8 @@ public class AppointmentDetailsService {
                 var format = (String) response.get("format");
                 appointmentDetails.setPrescription(url);
                 appointmentDetails.setPrescriptionFormat(format);
-                appointmentDetailsDto.setPrescription(url);
             } else {
                 appointmentDetails.setPrescription(null);
-                appointmentDetailsDto.setPrescription(null);
             }
         }
         if (attachment != null) {
@@ -56,14 +54,12 @@ public class AppointmentDetailsService {
                 var format = (String) response.get("format");
                 appointmentDetails.setAttachment(url);
                 appointmentDetails.setAttachmentFormat(format);
-                appointmentDetailsDto.setAttachment(url);
             } else {
                 appointmentDetails.setAttachment(null);
-                appointmentDetailsDto.setAttachment(null);
             }
         }
 
-        return appointmentDetailsDto;
+        return modelMapper.map(appointmentDetails, AppointmentDetailsDto.class);
     }
 
     @Transactional(readOnly = true)
