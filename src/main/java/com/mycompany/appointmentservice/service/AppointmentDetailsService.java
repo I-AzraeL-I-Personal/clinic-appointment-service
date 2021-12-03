@@ -72,8 +72,12 @@ public class AppointmentDetailsService {
         return detailsRepository.findById(id)
                 .map(details -> {
                     var detailsDto = modelMapper.map(details, AppointmentDetailsDto.class);
-                    detailsDto.setPrescription(generatePublicUri(details.getPrescription(), details.getPrescriptionFormat()));
-                    detailsDto.setAttachment(generatePublicUri(details.getAttachment(), details.getAttachmentFormat()));
+                    if (details.getPrescription() != null) {
+                        detailsDto.setPrescription(generatePublicUri(details.getPrescription(), details.getPrescriptionFormat()));
+                    }
+                    if (details.getAttachment() != null) {
+                        detailsDto.setAttachment(generatePublicUri(details.getAttachment(), details.getAttachmentFormat()));
+                    }
                     return detailsDto;
                 })
                 .orElseThrow(() -> new DataNotFoundException(id.toString(), "Appointment not found"));
@@ -85,8 +89,7 @@ public class AppointmentDetailsService {
             @SuppressWarnings("unchecked")
             Map<String, Object> response = cloudinary.uploader().upload(file.getBytes(), Map.of(
                     "resource_type", "auto",
-                    "public_id", path
-            ));
+                    "public_id", path));
             return response;
         } catch (IOException e) {
             log.error("Exception in uploadFile(): {}", e.getMessage());
@@ -96,7 +99,9 @@ public class AppointmentDetailsService {
 
     private String generatePublicUri(String publicId, String format) {
         try {
-            return cloudinary.privateDownload(publicId, format, Map.of("attachment", "true"));
+            return cloudinary.privateDownload(publicId, format, Map.of(
+                    "attachment", "true",
+                    "resource_type", "raw"));
         } catch (Exception e) {
             log.error("Exception in generatePublicUri(): {}", e.getMessage());
             throw new DataInvalidException("", "Couldn't get file");
